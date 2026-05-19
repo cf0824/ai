@@ -1,0 +1,388 @@
+import sys
+from django.shortcuts import HttpResponse
+from django.db import connection, transaction
+import json
+from admin_app.sys import public
+
+
+###########################################################################################################
+#审核流程配置，审核流程处理
+#add by litz, 20200429
+#
+###########################################################################################################
+
+#增删改查配置数据操作主流程
+@transaction.atomic()
+def Main_Proc( request ):
+    public.respcode, public.respmsg = "999998", "交易开始处理!"
+    log = public.logger
+    sid = transaction.savepoint()
+    func_name=public.tran_type+'(request)'
+    if globals().get(public.tran_type):
+        log.info('---[%s]-begin---' % (public.tran_type), extra={'ptlsh': public.req_seq})
+        public.respinfo = eval(func_name)
+        log.info('---[%s]-end----' % (public.tran_type), extra={'ptlsh': public.req_seq})
+    else:
+        public.respcode, public.respmsg = "100002", "trantype error!"
+        public.respinfo = HttpResponse( public.setrespinfo() )
+    if public.respcode=="000000":
+        # 提交事务
+        transaction.savepoint_commit(sid)
+    # else:
+    #     # 回滚事务
+    #     transaction.savepoint_rollback(sid)
+    return public.respinfo
+
+
+#获取流程配置，并插入用户待处理流程明细表
+def WorkDue_ByType( wf_id, wf_type ):
+    log = public.logger
+
+    if wf_id:
+        sql = "select a.menu_id, a.menu_name, a.is_run_menu, a.app_id, menu_path " \
+          "from sys_workflow_node_cfg  where wf_id='%s' " % (wf_id)
+    else:
+        #新发起的流程。
+        sql = "select a.menu_id, a.menu_name, a.is_run_menu, a.app_id, menu_path " \
+              "from sys_workflow_node_cfg  where wf_type='%s' and wf_prev is null " % (wf_type)
+
+    log.info("获取流程配置:"+sql, extra={'ptlsh':public.req_seq})
+    cur = connection.cursor()  # 创建游标
+    cur.execute(sql)
+    rows = cur.fetchall()
+
+    for item in rows:
+        menuinfo={}
+
+
+    cur.close()
+    #返回结果
+    return True
+
+#流程审批管理-查询审批明细
+def get_workflow_info( request ):
+    log = public.logger
+    body=public.req_body
+    nodeid=body.get("node_id")
+
+    if not nodeid:
+        public.respcode, public.respmsg = "100221", "节点ID不可为空!"
+        public.respinfo = HttpResponse(public.setrespinfo())
+        return public.respinfo
+
+    try:
+        cur = connection.cursor()  # 创建游标
+        flow_info={
+            "node_id":"1111",
+            "node_name":"审批流程",
+            "tabledata":[
+                {"label": "申请类型", "value": "用章申请"},
+                { "label":"申请人", "value": "张三" },
+                {"label": "申请时间", "value": "2020-04-29 13:39:22"},
+                {"label": "申请用途", "value": "网站备案"},
+                {"label": "使用时间", "value": "2020-04-30 至 2020-05-01 "},
+                {"label": "附件", "value": [234,233]},
+                {"label": "当前状态", "value": "申请中"},
+            ],
+            "node_flow":[
+                { "name":" 提交(张三)" },
+                { "name": " 审批(李四)" },
+                { "name": " 审批(王五)" },
+                {"name": " 归档(赵六)"},
+            ],
+            "node_status":False, #False-未处理,True-已处理
+            "node_active":2,
+            "node_act":"", #处理动作 1-同意 2-不同意
+            "snote":"", #说明
+            "file":[222,333],
+        }
+        #模拟返回
+        cur.close()
+
+    except Exception as ex:
+        log.error("交易失败!" + str(ex), exc_info=True, extra={'ptlsh': public.req_seq})
+        public.exc_type, public.exc_value, public.exc_traceback = sys.exc_info()
+        public.respinfo = HttpResponse( public.setrespinfo() )
+        return public.respinfo
+
+    public.respcode, public.respmsg = "000000", "交易成功!"
+    json_data = {
+        "HEAD": public.resphead_setvalue(),
+        "BODY": {
+            "flow_info":flow_info,
+        },
+    }
+    s = json.dumps(json_data, cls=public.JsonCustomEncoder, ensure_ascii=False)
+    public.respinfo = HttpResponse(s)
+    return public.respinfo
+
+#审批流程配置时，获取表单的字段信息
+def workflow_get_formfield_info( request ):
+    log = public.logger
+    body=public.req_body
+    formid=body.get("form_id")
+
+    if not formid:
+        public.respcode, public.respmsg = "110221", "表单ID不可为空!"
+        public.respinfo = HttpResponse(public.setrespinfo())
+        return public.respinfo
+
+    try:
+        cur = connection.cursor()  # 创建游标
+        sql = "select field_id, field_name from sys_form_cfg_fieldlist where form_id=%s " \
+              "and comp_type in ('textarea', 'input', 'datetime', 'select', 'radio', 'date')"
+        cur.execute(sql, formid)
+        rows=cur.fetchall()
+        field_list=[]
+        for item in rows:
+            field_list.append( {"key":item[0], "value":item[1]} )
+
+        cur.close()
+
+    except Exception as ex:
+        log.error("交易失败!" + str(ex), exc_info=True, extra={'ptlsh': public.req_seq})
+        public.exc_type, public.exc_value, public.exc_traceback = sys.exc_info()
+        public.respinfo = HttpResponse( public.setrespinfo() )
+        return public.respinfo
+
+    public.respcode, public.respmsg = "000000", "交易成功!"
+    json_data = {
+        "HEAD": public.resphead_setvalue(),
+        "BODY": {
+            "field_list":field_list,
+        },
+    }
+    s = json.dumps(json_data, cls=public.JsonCustomEncoder, ensure_ascii=False)
+    public.respinfo = HttpResponse(s)
+    return public.respinfo
+
+#审批流程配置时，获取用户列表信息
+def workflow_get_user_list( request ):
+    log = public.logger
+    body=public.req_body
+    # formid=body.get("form_id")
+    #
+    # if not formid:
+    #     public.respcode, public.respmsg = "110221", "表单ID不可为空!"
+    #     public.respinfo = HttpResponse(public.setrespinfo())
+    #     return public.respinfo
+
+    try:
+        cur = connection.cursor()  # 创建游标
+        sql = "select user_id, user_name from sys_user where state='1' "
+        cur.execute(sql)
+        rows=cur.fetchall()
+        user_list=[]
+
+        #先初始化几个特殊的用户
+        user_list.append({"key": "org_leader", "value": 'org_leader' + '-' + '部门负责人'})
+
+        for item in rows:
+            user_list.append( {"key":item[0], "value":str(item[0])+'-'+item[1]} )
+
+        cur.close()
+
+    except Exception as ex:
+        log.error("交易失败!" + str(ex), exc_info=True, extra={'ptlsh': public.req_seq})
+        public.exc_type, public.exc_value, public.exc_traceback = sys.exc_info()
+        public.respinfo = HttpResponse( public.setrespinfo() )
+        return public.respinfo
+
+    public.respcode, public.respmsg = "000000", "交易成功!"
+    json_data = {
+        "HEAD": public.resphead_setvalue(),
+        "BODY": {
+            "user_list":user_list,
+        },
+    }
+    s = json.dumps(json_data, cls=public.JsonCustomEncoder, ensure_ascii=False)
+    public.respinfo = HttpResponse(s)
+    return public.respinfo
+
+
+#审批流程配置时，获取部门列表信息
+def workflow_get_org_list( request ):
+    log = public.logger
+    body=public.req_body
+    org_list = []
+    try:
+        cur = connection.cursor()
+
+        sql = " select org_id, org_name from sys_org where org_state='1' "
+        log.info(sql)
+        cur.execute(sql)
+        rows = cur.fetchall()
+        for item in rows:
+            org_list.append({"key": item[0], "value": str(item[0]) + '-' + item[1]})
+        cur.close()
+
+    except Exception as ex:
+        cur.close()
+        log.error("交易失败!" + str(ex), exc_info=True, extra={'ptlsh': public.req_seq})
+        public.exc_type, public.exc_value, public.exc_traceback = sys.exc_info()
+        public.respinfo = HttpResponse( public.setrespinfo() )
+        return public.respinfo
+
+    public.respcode, public.respmsg = "000000", "交易成功!"
+    json_data = {
+        "HEAD": public.resphead_setvalue(),
+        "BODY": {
+            "org_list":org_list,
+        },
+    }
+    s = json.dumps(json_data, cls=public.JsonCustomEncoder, ensure_ascii=False)
+    public.respinfo = HttpResponse(s)
+    return public.respinfo
+
+#审批流程配置时，获取一个流程ID
+def workflow_cfg_create( request ):
+    log = public.logger
+    body=public.req_body
+    formid=body.get("form_id")
+
+    if not formid:
+        public.respcode, public.respmsg = "110221", "表单ID不可为空!"
+        public.respinfo = HttpResponse(public.setrespinfo())
+        return public.respinfo
+
+    try:
+        cur = connection.cursor()  # 创建游标
+        wf_cfg = {
+            "where": [
+                {
+                    "a": "",
+                    "to": "",
+                    "toType":"diy",
+                    "b": []
+                }
+            ],
+            "auditPerson": [],
+            "sendPerson": []
+        }
+        sql = "insert into sys_workflow_node_cfg(form_id, wf_type, wf_prev, wf_cfg, wf_state) values(%s, '', '0',%s, '0') "
+        cur.execute(sql, (formid, str(wf_cfg)))
+
+        # 查询刚刚插入的ID
+        cur.execute("SELECT LAST_INSERT_ID()")  # 获取自增字段刚刚插入的ID
+        row = cur.fetchone()
+        if row:
+            wf_id = row[0]
+            log.info('流程配置ID生成，自增字段ID:%s' % str(wf_id), extra={'ptlsh': public.req_seq})
+        cur.close()  # 关闭游标
+
+    except Exception as ex:
+        log.error("交易失败!" + str(ex), exc_info=True, extra={'ptlsh': public.req_seq})
+        public.exc_type, public.exc_value, public.exc_traceback = sys.exc_info()
+        public.respinfo = HttpResponse( public.setrespinfo() )
+        return public.respinfo
+
+    public.respcode, public.respmsg = "000000", "交易成功!"
+    json_data = {
+        "HEAD": public.resphead_setvalue(),
+        "BODY": {
+            "wf_id":wf_id,
+        },
+    }
+    s = json.dumps(json_data, cls=public.JsonCustomEncoder, ensure_ascii=False)
+    public.respinfo = HttpResponse(s)
+    return public.respinfo
+
+#审批流程配置时，根据表单ID，获取审批流程配置信息
+def get_workflow_cfg_info( request ):
+    log = public.logger
+    body=public.req_body
+    formid=body.get("form_id")
+
+    if not formid:
+        public.respcode, public.respmsg = "110221", "表单ID不可为空!"
+        public.respinfo = HttpResponse(public.setrespinfo())
+        return public.respinfo
+
+    try:
+        workflow_info=[]
+        cur = connection.cursor()  # 创建游标
+        sql = "select wf_id, wf_notes, wf_prev,wf_type,wf_cfg from sys_workflow_node_cfg where form_id=%s "
+        cur.execute(sql, formid)
+        rows = cur.fetchall()
+        for item in rows:
+            wfinfo={}
+            wfinfo['wf_id'] = item[0]
+            wfinfo['wf_notes'] = item[1]
+            wfinfo['wf_prev'] = item[2]
+            wfinfo['wf_type'] = item[3]
+            if item[4]:
+                wfinfo['wf_cfg'] = eval(item[4])
+            else:
+                wfinfo['wf_cfg'] = {}
+            workflow_info.append(wfinfo)
+        cur.close()  # 关闭游标
+
+    except Exception as ex:
+        log.error("交易失败!" + str(ex), exc_info=True, extra={'ptlsh': public.req_seq})
+        public.exc_type, public.exc_value, public.exc_traceback = sys.exc_info()
+        public.respinfo = HttpResponse( public.setrespinfo() )
+        return public.respinfo
+
+    public.respcode, public.respmsg = "000000", "交易成功!"
+    json_data = {
+        "HEAD": public.resphead_setvalue(),
+        "BODY": {
+            "workflow_info":workflow_info,
+        },
+    }
+    s = json.dumps(json_data, cls=public.JsonCustomEncoder, ensure_ascii=False)
+    public.respinfo = HttpResponse(s)
+    return public.respinfo
+
+
+#审批流程配置时，保存配置信息
+def workflow_cfg_save( request ):
+    log = public.logger
+    body=public.req_body
+    formid=body.get("form_id")
+    workflow_info = body.get("workflow_info")
+    if not formid:
+        public.respcode, public.respmsg = "110221", "表单ID不可为空!"
+        public.respinfo = HttpResponse(public.setrespinfo())
+        return public.respinfo
+
+    if not workflow_info:
+        public.respcode, public.respmsg = "110222", "配置信息不可为空!"
+        public.respinfo = HttpResponse(public.setrespinfo())
+        return public.respinfo
+
+    try:
+        cur = connection.cursor()  # 创建游标
+
+        wf_id_list=[]
+        for item in workflow_info:
+            sql = "update sys_workflow_node_cfg set wf_type=%s, wf_prev=%s, wf_cfg=%s, wf_notes=%s, wf_state='1' where wf_id=%s "
+            cur.execute(sql, (item.get('wf_type'), item.get('wf_prev'),str(item.get('wf_cfg')), item.get('wf_notes'), item.get('wf_id')) )
+            wf_id_list.append( item.get('wf_id') )
+
+        wf_id_list = tuple(wf_id_list)
+        #删除前端没有上送的流程。
+        if len(wf_id_list)==1:  # (1,) 一个的时候，后边会多一个逗号
+            sql = "delete from sys_workflow_node_cfg  where form_id='%s' and wf_id != %s" % (formid, wf_id_list[0] )
+        else:
+            sql = "delete from sys_workflow_node_cfg  where form_id='%s' and wf_id not in %s" % (formid, str(wf_id_list))
+        log.info("删除前端没有上送的流程:"+sql, extra={'ptlsh': public.req_seq})
+        if len(wf_id_list) >= 1:
+            cur.execute(sql  )
+        cur.close()  # 关闭游标
+
+    except Exception as ex:
+        log.error("交易失败!" + str(ex), exc_info=True, extra={'ptlsh': public.req_seq})
+        public.exc_type, public.exc_value, public.exc_traceback = sys.exc_info()
+        cur.close()  # 关闭游标
+        public.respinfo = HttpResponse( public.setrespinfo() )
+        return public.respinfo
+
+    public.respcode, public.respmsg = "000000", "交易成功!"
+    json_data = {
+        "HEAD": public.resphead_setvalue(),
+        "BODY": body,
+    }
+    s = json.dumps(json_data, cls=public.JsonCustomEncoder, ensure_ascii=False)
+    public.respinfo = HttpResponse(s)
+    return public.respinfo

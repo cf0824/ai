@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>跳转到小程序</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 480px;
+            overflow: hidden;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .app-icon {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 48px;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        h1 {
+            font-size: 28px;
+            color: #333;
+            margin-bottom: 16px;
+            font-weight: 600;
+        }
+
+        .subtitle {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 32px;
+            line-height: 1.6;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            background: linear-gradient(135deg, #07c160 0%, #06ae56 100%);
+            color: white;
+            border: none;
+            padding: 18px 40px;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            max-width: 280px;
+            margin: 20px auto;
+            box-shadow: 0 10px 30px rgba(7, 193, 96, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 40px rgba(7, 193, 96, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-icon {
+            font-size: 20px;
+        }
+
+        .countdown {
+            font-size: 14px;
+            color: #999;
+            margin-top: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .countdown-number {
+            background: #f5f5f5;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .status-card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 24px;
+            margin: 30px 0;
+        }
+
+        .status-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+
+        .success {
+            color: #07c160;
+        }
+
+        .error {
+            color: #f5222d;
+        }
+
+        .warning {
+            color: #faad14;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #07c160;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .progress-bar {
+            height: 6px;
+            background: #f0f0f0;
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 30px 0;
+        }
+
+        .progress {
+            height: 100%;
+            background: linear-gradient(90deg, #07c160 0%, #764ba2 100%);
+            width: 0%;
+            animation: progress 5s linear forwards;
+        }
+
+        @keyframes progress {
+            to { width: 100%; }
+        }
+
+        .tips {
+            background: #f0f9ff;
+            border-left: 4px solid #1890ff;
+            padding: 16px;
+            border-radius: 8px;
+            margin: 30px 0;
+            text-align: left;
+        }
+
+        .tips h3 {
+            color: #1890ff;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+
+        .tips ul {
+            padding-left: 20px;
+            color: #666;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .footer {
+            margin-top: 30px;
+            color: #999;
+            font-size: 14px;
+            border-top: 1px solid #f0f0f0;
+            padding-top: 20px;
+        }
+
+        .jump-status {
+            margin-top: 20px;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .jump-status.success {
+            background: #f6ffed;
+            border: 1px solid #b7eb8f;
+            color: #52c41a;
+        }
+
+        .jump-status.error {
+            background: #fff2f0;
+            border: 1px solid #ffccc7;
+            color: #ff4d4f;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 30px 20px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            .app-icon {
+                width: 100px;
+                height: 100px;
+                font-size: 40px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        {% if is_wechat %}
+            {% if scheme %}
+                <!-- 跳转状态 -->
+                <div class="app-icon">
+                    <span>🚀</span>
+                </div>
+
+                <h1>即将打开小程序</h1>
+                <p class="subtitle">点击下方按钮跳转到微信小程序，即将开始您的专属体验</p>
+
+                <div class="progress-bar">
+                    <div class="progress" id="progressBar"></div>
+                </div>
+
+                <button id="jumpBtn" class="btn">
+                    <span class="btn-icon">➡️</span>
+                    <span>立即跳转</span>
+                </button>
+
+                <div class="countdown">
+                    <span>倒计时：</span>
+                    <span class="countdown-number" id="countdown">5</span>
+                    <span>秒后自动跳转</span>
+                </div>
+
+                <div id="jumpStatus" class="jump-status"></div>
+
+                <div class="tips">
+                    <h3>温馨提示</h3>
+                    <ul>
+                        <li>如果跳转失败，请尝试点击上方按钮手动跳转</li>
+                        <li>请确保微信已更新至最新版本</li>
+                        <li>跳转过程中请勿关闭此页面</li>
+                    </ul>
+                </div>
+            {% else %}
+                <!-- 错误状态 -->
+                <div class="status-card">
+                    <div class="status-icon error">
+                        ❌
+                    </div>
+                    <h1>跳转失败</h1>
+                    <p class="subtitle">很抱歉，跳转链接生成失败，请稍后重试</p>
+                </div>
+
+                <div class="tips">
+                    <h3>可能的原因</h3>
+                    <ul>
+                        <li>小程序配置信息有误</li>
+                        <li>网络连接不稳定</li>
+                        <li>服务器暂时不可用</li>
+                    </ul>
+                </div>
+
+                <button class="btn" onclick="location.reload()">
+                    <span class="btn-icon">🔄</span>
+                    <span>重新加载</span>
+                </button>
+            {% endif %}
+        {% else %}
+            <!-- 非微信环境 -->
+            <div class="status-card">
+                <div class="status-icon warning">
+                    ⚠️
+                </div>
+                <h1>请在微信中打开</h1>
+                <p class="subtitle">此页面需要在微信浏览器中打开才能正常跳转到小程序</p>
+            </div>
+
+            <div class="tips">
+                <h3>操作指引</h3>
+                <ul>
+                    <li>点击右上角菜单，选择"在浏览器中打开"</li>
+                    <li>复制链接到微信中打开</li>
+                    <li>或直接使用微信扫描二维码</li>
+                </ul>
+            </div>
+
+{#            <div class="qr-code">#}
+{#                <!-- 这里可以添加二维码 -->#}
+{#                <div style="width: 200px; height: 200px; background: #f5f5f5; border-radius: 12px; margin: 20px auto; display: flex; align-items: center; justify-content: center; color: #999;">#}
+{#                    小程序二维码#}
+{#                </div>#}
+{#            </div>#}
+        {% endif %}
+
+{#        <div class="footer">#}
+{#            <p>© 2023 版权所有 | 由微信小程序提供技术支持</p>#}
+{#        </div>#}
+    </div>
+
+    {% if is_wechat and scheme %}
+    <script>
+        let countdown = 5;
+        const countdownElement = document.getElementById('countdown');
+        const jumpBtn = document.getElementById('jumpBtn');
+        const progressBar = document.getElementById('progressBar');
+        const jumpStatus = document.getElementById('jumpStatus');
+        let countdownInterval = null;
+        let isJumping = false; // 标记是否正在跳转
+
+        // 停止所有自动跳转逻辑
+        function stopAutoJump() {
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+
+            // 停止进度条动画
+            progressBar.style.animationPlayState = 'paused';
+
+            // 禁用按钮
+            jumpBtn.disabled = true;
+            jumpBtn.innerHTML = '<span class="btn-icon">⏳</span><span>跳转中...</span>';
+        }
+
+        // 显示跳转状态
+        function showJumpStatus(message, type = 'success') {
+            jumpStatus.textContent = message;
+            jumpStatus.className = `jump-status ${type}`;
+            jumpStatus.style.display = 'block';
+        }
+
+        function performJump() {
+            // 如果已经在跳转中，直接返回
+            if (isJumping) return;
+
+            isJumping = true;
+
+            // 停止自动跳转
+            stopAutoJump();
+
+            // 显示跳转状态
+            showJumpStatus('正在跳转到小程序，请稍候...', 'success');
+
+            // 记录跳转时间
+            const jumpTime = Date.now();
+
+            // 主跳转方式
+            window.location.href = "{{ scheme }}";
+
+            // 设置一个定时器，如果跳转失败（比如还在当前页面），提供反馈
+            setTimeout(() => {
+                // 检查是否还在当前页面（跳转失败）
+                if (Date.now() - jumpTime > 1000 && window.location.href.indexOf('jump.html') !== -1) {
+                    // 跳转可能失败，恢复按钮状态
+                    jumpBtn.disabled = false;
+                    jumpBtn.innerHTML = '<span class="btn-icon">🔄</span><span>重新跳转</span>';
+                    showJumpStatus('跳转失败，请点击上方按钮重试', 'error');
+                    isJumping = false;
+                }
+            }, 1500);
+
+            // 备用跳转方式（使用iframe）
+            setTimeout(() => {
+                try {
+                    const iframe = document.createElement('iframe');
+                    iframe.style.display = 'none';
+                    iframe.src = "{{ scheme }}";
+                    document.body.appendChild(iframe);
+                } catch (e) {
+                    console.error('备用跳转失败:', e);
+                }
+            }, 300);
+        }
+
+        // 初始化倒计时
+        countdownInterval = setInterval(() => {
+            countdown--;
+            countdownElement.textContent = countdown;
+
+            // 更新进度条
+            const progress = 100 - (countdown / 5 * 100);
+            progressBar.style.width = `${progress}%`;
+
+            if (countdown <= 0) {
+                clearInterval(countdownInterval);
+                if (!isJumping) {
+                    performJump();
+                }
+            }
+        }, 1000);
+
+        // 点击跳转按钮
+        jumpBtn.addEventListener('click', performJump);
+
+        // 防止页面因跳转失败而卡住
+        setTimeout(() => {
+            if (!isJumping && window.location.href.indexOf('jump.html') !== -1) {
+                document.querySelector('.subtitle').textContent = '跳转可能遇到问题，请尝试手动点击按钮';
+                jumpBtn.style.background = 'linear-gradient(135deg, #f5222d 0%, #cf1322 100%)';
+                showJumpStatus('长时间未跳转，请检查网络连接或手动点击跳转按钮', 'error');
+            }
+        }, 10000);
+
+        // 页面可见性变化时处理
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                // 页面被隐藏，可能跳转成功了
+                stopAutoJump();
+            }
+        });
+
+        // 页面卸载前清理
+        window.addEventListener('beforeunload', function() {
+            stopAutoJump();
+        });
+    </script>
+    {% endif %}
+</body>
+</html>

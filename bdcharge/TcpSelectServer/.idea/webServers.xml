@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="0682da00-4323-4388-92dd-1c52ae912dff" name="122.51.168.229_root">
+        <fileTransfer rootFolder="/home/leanpower/TcpSelectServer/" accessType="SFTP" host="122.51.168.229" port="22" sshConfigId="fdb5b1ea-b4a7-4f39-9fa2-7bccbd9b4ded" sshConfig="root@122.51.168.229:22 key" keyPair="true">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>

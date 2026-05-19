@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="cdf922e7-4a81-4558-b5d7-65d1e531a11e" name="充电桩119.27.169.45">
+        <fileTransfer rootFolder="/home/bdcharge/SmartChargeBD" accessType="SFTP" host="119.27.169.45" port="22" sshConfigId="9c0d3286-42df-4d98-9c18-3dcd41ecb3ee" sshConfig="root@119.27.169.45:22 password">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" keepAliveTimeout="0" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>
