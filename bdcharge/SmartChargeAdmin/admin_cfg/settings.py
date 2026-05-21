@@ -118,24 +118,22 @@ pymysql.install_as_MySQLdb()
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'smart_charge',
-        'USER': 'bdcharge_dbuser',
-        'PASSWORD': 'bdcharge_2026',
-        'HOST': '10.155.5.4',
+        'NAME': os.environ.get('MYSQL_DATABASE', 'charge_db'),
+        'USER': os.environ.get('MYSQL_USER', 'root'),
+        'PASSWORD': os.environ.get('MYSQL_PASSWORD', ''),
+        'HOST': os.environ.get('MYSQL_HOST', 'mysql'),
         'PORT': '3306',
         'OPTIONS': { 'init_command': 'SET default_storage_engine=INNODB,character_set_connection=utf8mb4,collation_connection=utf8_unicode_ci;' }
     }
 }
 
-
 TENCENT_OSS_CONFIG = {
-    'TENCENT_OSS_SECRET_ID': 'AKIDslYEi04xc4HG2Rm04wb2HJ7iAe0Np5B8',
-    'TENCENT_OSS_SECRET_KEY': 'pSs5oKcrumRvBG7qOjtpasxpUxHOHySi',
-    'TENCENT_OSS_BUCKET': 'smartcharge-1257596698',
-    'TENCENT_OSS_REGION': 'ap-shanghai',
-    'TENCENT_OSS_TOKEN': ''
+    'TENCENT_OSS_SECRET_ID': os.environ.get('TENCENT_OSS_SECRET_ID', ''),
+    'TENCENT_OSS_SECRET_KEY': os.environ.get('TENCENT_OSS_SECRET_KEY', ''),
+    'TENCENT_OSS_BUCKET': os.environ.get('TENCENT_OSS_BUCKET', 'smartcharge-1257596698'),
+    'TENCENT_OSS_REGION': os.environ.get('TENCENT_OSS_REGION', 'ap-shanghai'),
+    'TENCENT_OSS_TOKEN': os.environ.get('TENCENT_OSS_TOKEN', ''),
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/2.1/ref/settings/#auth-password-validators

@@ -21,6 +21,6 @@ RUN pip install pip -U -i https://pypi.tuna.tsinghua.edu.cn/simple
 # 将 requirements.txt 复制到容器的 pmadmin 目录
 ADD requirements.txt /app/
 # 安装库
-RUN pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple --no-dependencies
+RUN pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 # 将当前目录复制到容器的 code 目录
 ADD ./ /app/

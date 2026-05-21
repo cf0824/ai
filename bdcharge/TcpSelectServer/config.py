@@ -18,16 +18,15 @@ sys.path.append(pwd)
 print(sys.path)
 
 REDISConfig_local = {
-    "host": "10.155.5.10",
-    # "host": "124.223.221.53",
-    "port": 6379,
-    "password": "11223344root",
+    "host": os.environ.get('REDIS_HOST', 'redis'),
+    "port": int(os.environ.get('REDIS_PORT', 6379)),
+    "password": os.environ.get('REDIS_PASSWORD', '11223344root'),
     "db": 1
 }
 
 REDISConfig_dev = {
-    "host": "10.155.5.10",
-    "port": 6379,
-    "password": "",
+    "host": os.environ.get('REDIS_HOST', 'redis'),
+    "port": int(os.environ.get('REDIS_PORT', 6379)),
+    "password": os.environ.get('REDIS_PASSWORD', '11223344root'),
     "db": 1
 }

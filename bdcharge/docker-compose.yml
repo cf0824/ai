@@ -1,11 +1,30 @@
-version: "3"
 services:
-
   redis:
     image: redis:latest
-    command: redis-server --requirepass 11223344root
+    command: redis-server --requirepass ${REDIS_PASSWORD}
     ports:
       - 6379:6379
+    networks:
+      - web-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1g"
+
+  mysql:
+    image: mysql:8.0
+    container_name: charge_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}   # 从 .env 文件读取
+      MYSQL_DATABASE: charge_db                     # 启动时自动创建的数据库
+      MYSQL_USER: charge_user                       # 可选普通用户
+      MYSQL_PASSWORD: ${MYSQL_USER_PASSWORD}
+    ports:
+      - "3306:3306"          # 如需宿主机访问可保留，否则可删除
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql   # 可选初始化脚本
     networks:
       - web-network
     logging:
@@ -20,11 +39,16 @@ services:
       - 6999:6999
     environment:
       - TZ=Asia/Shanghai
+      - REDIS_HOST=redis              
+      - REDIS_PORT=6379              
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
     volumes:
       - ./TcpSelectServer:/app
     networks:
       - web-network
     command: python termmain.py
+    depends_on:
+      - mysql
     logging:
       driver: "json-file"
       options:
@@ -33,16 +57,25 @@ services:
   smartchargeadmin:
     restart: always
     build: ./SmartChargeAdmin
-    #image: kfrural_django_admin
     ports:
       - 28001:28001
     environment:
       - TZ=Asia/Shanghai
+      - MYSQL_HOST=mysql
+      - MYSQL_DATABASE=charge_db
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - TENCENT_OSS_SECRET_ID=${TENCENT_OSS_SECRET_ID}
+      - TENCENT_OSS_SECRET_KEY=${TENCENT_OSS_SECRET_KEY}
+      - TENCENT_OSS_BUCKET=${TENCENT_OSS_BUCKET}
+      - TENCENT_OSS_REGION=${TENCENT_OSS_REGION}
     volumes:
       - ./SmartChargeAdmin:/app
     command: uwsgi --ini uwsgi.ini
     networks:
       - web-network
+    depends_on:
+      - mysql
     logging:
       driver: "json-file"
       options:
@@ -55,21 +88,28 @@ services:
       - 28004:28004
     environment:     
       - TZ=Asia/Shanghai
+      - MYSQL_HOST=mysql
+      - MYSQL_DATABASE=charge_db
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - REDIS_HOST=redis              
+      - REDIS_PORT=6379              
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
     volumes:
       - ./SmartChargeBD:/app
     command: bash -c "service cron restart && python manage.py crontab add && uwsgi --ini uwsgi.ini"
     networks:
       - web-network
-
+    depends_on:
+      - mysql
     logging:
       driver: "json-file"
       options:
         max-size: "1g"
 
-
-
-
-
 networks:
   web-network:
     driver: bridge
+
+volumes:
+  mysql_data:        # MySQL 数据持久化卷
